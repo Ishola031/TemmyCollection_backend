@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Account, EmailVerification
+from .models import Account, EmailVerification, Notification
 from django.contrib.auth.admin import UserAdmin
 # Register your models here.
 
@@ -26,6 +26,9 @@ class AccountAdmin(UserAdmin):
 
 @admin.register(EmailVerification)
 class EmailVerificationAdmin(admin.ModelAdmin):
+    pass
+@admin.register(Notification)
+class NotificationAdmin(admin.ModelAdmin):
     pass
 
 admin.site.register(Account, AccountAdmin)

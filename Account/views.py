@@ -1,8 +1,8 @@
 from django.shortcuts import render, redirect
-from .models import Account, EmailVerification, PendingSignup
+from .models import Account, EmailVerification, PendingSignup, Notification
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
-from .serializers import UserSerializer, AdminUserSerializer
+from .serializers import UserSerializer, AdminUserSerializer, NotificationSerializer
 from rest_framework import generics
 from rest_framework.decorators import api_view, permission_classes, authentication_classes
 from django.contrib.auth.hashers import make_password, check_password
@@ -20,8 +20,6 @@ from django.contrib.auth import authenticate
 from django.contrib.auth.decorators import login_required
 from allauth.socialaccount.models import SocialAccount, SocialToken
 from django.http import HttpResponseRedirect
-from django.contrib.auth import authenticate
-from rest_framework.permissions import IsAdminUser
 
 # Create your views here.
 @api_view(['GET'])
@@ -39,7 +37,6 @@ def CheckEmail(request):
 @permission_classes([AllowAny])
 def sendVerifyEmailCode(request):
     try:
-        print(request.data)
         email = request.data.get("email")
         first_Name = request.data.get("first_Name")
         last_Name = request.data.get("last_Name")
@@ -91,7 +88,6 @@ def sendVerifyEmailCode(request):
     except Exception as e:
         print("Send verification error:", str(e))
         return Response({"error": "couldn't send code"})
-
 
 class CreateUser(generics.CreateAPIView):
     serializer_class = UserSerializer
@@ -244,7 +240,7 @@ class CustomTokenObtainPairView(TokenObtainPairView):
             response.set_cookie(
                 key='access_token',
                 value=access_token,
-                max_age=30,
+                max_age=15 * 60,
                 httponly=True,     # Keeps token safe from XSS attacks
                 samesite='Lax',    # CSRF protection
                 secure=False,      # Set to True in production (HTTPS)
@@ -283,7 +279,7 @@ class CustomRefreshTokenView(TokenRefreshView):
                 key='access_token',
                 value=access_token,
                 httponly=True,     # Keeps token safe from XSS attacks
-                max_age=30,    
+                max_age=15 * 30,    
                 samesite='Lax',    # CSRF protection
                 secure=False,      # Set to True in production (HTTPS)
                 path='/'
@@ -305,13 +301,14 @@ def LogoutView(request):
     except:
         return Response({'success': False})
 
-@api_view(['POST'])
-@permission_classes([IsAuthenticated])
+@api_view(['POST', 'GET'])
+@permission_classes([AllowAny]) # MUST BE AllowAny so unauthenticated users don't get a 401 error
 def is_authenticated(request):
-    return Response({'isAuthenticated': True, 'user': UserSerializer(request.user).data})
+    if request.user and request.user.is_authenticated:
+        return Response({'isAuthenticated': True, 'user': UserSerializer(request.user).data})
+    return Response({'isAuthenticated': False, 'user': None}, status=401)
 
 @login_required
-
 def google_login_callback(request):
     user = request.user
     
@@ -433,3 +430,12 @@ def userDetails(request):
     user = request.user
     serializer = UserSerializer(user)
     return Response(serializer.data)
+
+class NotificationListView(generics.ListAPIView):
+    serializer_class = NotificationSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        # Fetch notifications belonging exclusively to the logged-in user
+        return Notification.objects.filter(user=self.request.user)
+

@@ -1,6 +1,7 @@
 from django.contrib import admin
 from .models import (Category, Tag, Color, Size, Product, ProductTag, Collection, ProductCollection, Variation, ProductLike, 
-                     CategoryAttribute,AttributeOption, UserProductView,ProductAttributeValue, ProductGallery, Brand, SpecificationKey,ProductSpecification, ProductReview)
+                     CategoryAttribute,AttributeOption, UserProductView,ProductAttributeValue, ProductGallery, Brand, SpecificationKey,
+                     ProductSpecification, ProductReview, SearchKeyword,UserSearch,ProductKeyword)
 # Register your models here.
 @admin.register(Brand)
 class BrandAdmin(admin.ModelAdmin):
@@ -88,7 +89,6 @@ class ProductSpecificationInline(admin.TabularInline):
     autocomplete_fields = ('product','key')
 
 
-
 @admin.register(Collection)
 class CollectionAdmin(admin.ModelAdmin):
     prepopulated_fields = {'slug': ('name',)}
@@ -115,3 +115,18 @@ class ProductReviewAdmin(admin.ModelAdmin):
 @admin.register(UserProductView)
 class UserProductViewAdmin(admin.ModelAdmin):
     pass
+
+@admin.register(SearchKeyword)
+class SearchKeywordAdmin(admin.ModelAdmin):
+    pass
+
+
+@admin.register(UserSearch)
+class UserSearchAdmin(admin.ModelAdmin):
+    pass
+
+
+@admin.register(ProductKeyword)
+class ProductKeywordAdmin(admin.ModelAdmin):
+    pass
+

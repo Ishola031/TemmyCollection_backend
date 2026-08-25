@@ -246,4 +246,30 @@ class UserProductView(models.Model):
         return f"{self.user.username}-{self.product.name}"
 
 
-    
+class SearchKeyword(models.Model):
+    keyword = models.CharField(max_length=255,unique=True)
+    search_count= models.PositiveIntegerField(default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.keyword
+
+class UserSearch(models.Model):
+    user = models.ForeignKey(Account, on_delete=models.CASCADE, related_name='searches')
+    keyword=models.CharField(max_length=255)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"{self.user} - {self.keyword}"
+
+class ProductKeyword(models.Model):
+    product=models.ForeignKey(Product, on_delete=models.CASCADE, related_name='keywords')
+    keyword=models.CharField(max_length=100)
+
+    def __str__(self):
+        return self.keyword
+

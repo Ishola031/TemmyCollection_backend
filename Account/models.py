@@ -7,7 +7,6 @@ import random
 from cloudinary.models import CloudinaryField
 
 
-
 # Create your models here.
 class MyAccountManager(BaseUserManager):
     def create_user(self, username, email, password=None):
@@ -100,4 +99,41 @@ class PendingSignup(models.Model):
 
     def is_expired(self):
         return timezone.now() > self.created_at + timedelta(minutes=10)
+
+class Notification(models.Model):
+    class NotificationType(models.TextChoices):
+        # Authentication
+        WELCOME = 'welcome', 'Welcome / Signup'
+        LOGIN_ALERT = 'login_alert', 'Security / Login Alert'
+        
+        # Cart & Stock
+        OUT_OF_STOCK = 'out_of_stock', 'Item Out of Stock'
+        PRICE_DROP = 'price_drop', 'Price Drop Alert'
+        
+        # Orders & Reservations
+        RESERVATION_CONFIRMED = 'reservation_confirmed', 'Reservation Confirmed'
+        RESERVATION_EXPIRING = 'reservation_expiring', 'Reservation Expiring'
+        ORDER_PLACED = 'order_placed', 'Order Placed'
+        ORDER_SHIPPED = 'order_shipped', 'Order Out for Delivery'
+
+    user = models.ForeignKey(Account, on_delete=models.CASCADE, related_name='notifications')
+    title = models.CharField(max_length=255)
+    message = models.TextField()
+    notification_type = models.CharField(max_length=50, choices=NotificationType.choices)
+    
+    # Track status & optional navigation links
+    is_read = models.BooleanField(default=False)
+    target_url = models.CharField(max_length=500, blank=True, null=True,help_text="Optional route to redirect when clicked (e.g., /cart or /orders/12)")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['user', 'is_read']),
+            models.Index(fields=['created_at']),
+        ]
+
+    def __str__(self):
+        return f"{self.user.username} - {self.get_notification_type_display()} ({'Read' if self.is_read else 'Unread'})"
+
 

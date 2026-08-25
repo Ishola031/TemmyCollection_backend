@@ -1,5 +1,5 @@
 from  rest_framework import serializers
-from .models import Account, PendingSignup
+from .models import Account, PendingSignup,Notification
 
 
 class AdminUserSerializer(serializers.ModelSerializer):
@@ -62,3 +62,8 @@ class UserInfoSerializer(serializers.ModelSerializer):
     class Meta:
         model = Account
         fields =('id','username', 'first_name', 'last_name')
+
+class NotificationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Notification
+        fields = ['id', 'title', 'message', 'notification_type', 'is_read', 'target_url', 'created_at']

@@ -2,17 +2,18 @@ from django.shortcuts import render
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
-from .models import Category, Collection, UserProductView,Product, Brand,CategoryAttribute, AttributeOption,Color, Size, ProductLike, Variation, ProductReview
+from .models import Category, Collection, SearchKeyword,UserSearch,ProductKeyword,UserProductView,Product, Brand,CategoryAttribute, AttributeOption,Color, Size, ProductLike, Variation, ProductReview
 from .serializers import (CategorySerializer, CollectionSerializer, ProductSerializer, BrandSerializer, ColorSerializers,SizeSerializer, RepulsiveCategoryMiniSerializer,
-                          ProductReviewSerializer, UserProductViewSerializer)
+                          ProductReviewSerializer, UserProductViewSerializer, )
 from order.models import OrderItem, Cart
 from order.serializers import CartItemSerializer
 from .paginations import ProductPagination
-from django.db.models import Prefetch, Exists, OuterRef, Value , BooleanField, F, Avg
+from django.db.models import Prefetch, Exists, OuterRef, Value , BooleanField,Avg, Q, When,Case,IntegerField, Count
 from rest_framework import status
 from mptt.utils import get_cached_trees
 from django.utils import timezone
-
+from rest_framework.decorators import APIView
+from datetime import datetime
 
 
 
@@ -382,5 +383,350 @@ def AddUserProductViewAPi(request):
         serializer.save(user=user, product=product, created_at=timezone.now())
         return Response(serializer.data)
     return serializer(serializer.errors, status=400)
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def RecentViewedAPi(request):
+    user= request.user
+    product_viewed = UserProductView.objects.select_related('user').filter(user=user).order_by('-created_at')
+    serializer = UserProductViewSerializer(product_viewed, many=True)
+    return Response(serializer.data, status=200)
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def WishListAPi(request):
+    products = Product.objects.select_related('brand', 'category').prefetch_related('variations__color','variations__size').order_by('-created_at')
+    is_liked_subquery = ProductLike.objects.filter(
+        user=request.user, 
+        product=OuterRef('pk')
+    )
+    products = products.annotate(is_Liked=Exists(is_liked_subquery)).filter(is_Liked=True)
+    serializer = ProductSerializer(products, many=True)
+    return Response(serializer.data, status=200)
+
+
+# @api_view(['GET'])
+# @permission_classes([AllowAny])
+# def searchAPi(request):
+#     data = request.data
+#     search = data.get('search')
+
+class ProductSearchView(APIView):
+    permission_classes = [AllowAny]
+    def get(self, request):
+        query = request.GET.get("q", "").strip()
+
+        if not query:
+            return Response({
+                "query": "",
+                "count": 0,
+                "results": []
+            })
+
+        # -------------------------------------------------
+        # Search products
+        # -------------------------------------------------
+
+        products = Product.objects.filter(
+            Q(name__icontains=query) |
+            Q(description__icontains=query) |
+            Q(brand__name__icontains=query) |
+            Q(category__name__icontains=query) |
+            Q(tag__name__icontains=query) |
+            Q(keywords__keyword__icontains=query),
+            is_available=True
+        ).distinct()
+
+        # -------------------------------------------------
+        # Add average rating
+        # -------------------------------------------------
+
+        products = products.annotate(
+            average_rating=Avg(
+                "reviews__rating",
+                filter=Q(reviews__is_approved=True)
+            )
+        )
+
+        # -------------------------------------------------
+        # Add number of reviews
+        # -------------------------------------------------
+
+        products = products.annotate(
+            review_count=Count(
+                "reviews",
+                filter=Q(reviews__is_approved=True),
+                distinct=True
+            )
+        )
+
+        # -------------------------------------------------
+        # Calculate search relevance
+        # -------------------------------------------------
+
+        products = products.annotate(
+            search_score=Case(
+
+                # Exact product name
+                When(
+                    name__iexact=query,
+                    then=Value(100)
+                ),
+
+                # Product name starts with query
+                When(
+                    name__istartswith=query,
+                    then=Value(80)
+                ),
+
+                # Product name contains query
+                When(
+                    name__icontains=query,
+                    then=Value(60)
+                ),
+
+                # Brand matches
+                When(
+                    brand__name__icontains=query,
+                    then=Value(50)
+                ),
+
+                # Category matches
+                When(
+                    category__name__icontains=query,
+                    then=Value(40)
+                ),
+
+                # Tag matches
+                When(
+                    tag__name__icontains=query,
+                    then=Value(30)
+                ),
+
+                # Product keyword matches
+                When(
+                    keywords__keyword__icontains=query,
+                    then=Value(30)
+                ),
+
+                # Description matches
+                When(
+                    description__icontains=query,
+                    then=Value(10)
+                ),
+
+                default=Value(5),
+
+                output_field=IntegerField()
+            )
+        )
+
+        # -------------------------------------------------
+        # Order results
+        # -------------------------------------------------
+
+        products = products.order_by(
+            "-search_score",
+            "-average_rating",
+            "-review_count",
+            "-created_at"
+        )
+
+        # -------------------------------------------------
+        # Pagination
+        # -------------------------------------------------
+
+        try:
+            page = int(request.GET.get("page", 1))
+        except ValueError:
+            page = 1
+
+        try:
+            page_size = int(request.GET.get("page_size", 20))
+        except ValueError:
+            page_size = 20
+
+        # Prevent someone from requesting thousands
+        page_size = min(page_size, 50)
+
+        if page < 1:
+            page = 1
+
+        start = (page - 1) * page_size
+        end = start + page_size
+
+        total_count = products.count()
+
+        products = products[start:end]
+
+        # -------------------------------------------------
+        # Save global search keyword
+        # -------------------------------------------------
+
+        keyword_obj, created = SearchKeyword.objects.get_or_create(
+            keyword=query.lower()
+        )
+
+        SearchKeyword.objects.filter(
+            id=keyword_obj.id
+        ).update(
+            search_count=keyword_obj.search_count + 1
+        )
+
+        # -------------------------------------------------
+        # Save user's search history
+        # -------------------------------------------------
+
+        if request.user.is_authenticated:
+            user_search = UserSearch.objects.filter(user=request.user,keyword=query).first()
+            if user_search:
+                user_search.created_at = datetime.now()
+                user_search.save()
+            else:
+                UserSearch.objects.create(
+                    user=request.user,
+                    keyword=query
+                )
+
+        # -------------------------------------------------
+        # Serialize
+        # -------------------------------------------------
+
+        serializer = ProductSerializer(
+            products,
+            many=True,
+            context={"request": request}
+        )
+
+        return Response({
+            "query": query,
+            "count": total_count,
+            "page": page,
+            "page_size": page_size,
+            "total_pages": (
+                (total_count + page_size - 1) // page_size
+            ),
+            "results": serializer.data
+        })
+
+
+class SearchSuggestionsView(APIView):
+    permission_classes = [AllowAny]
+    def get(self, request):
+
+        query = request.GET.get("q", "").strip()
+
+        if not query:
+            return Response({
+                "query": "",
+                "suggestions": []
+            })
+
+        suggestions = []
+
+        # -------------------------------------------------
+        # 1. Search popular search keywords
+        # -------------------------------------------------
+
+        keywords = SearchKeyword.objects.filter(
+            keyword__icontains=query
+        ).order_by(
+            "-search_count"
+        )[:5]
+
+        for keyword in keywords:
+
+            suggestions.append({
+                "type": "keyword",
+                "text": keyword.keyword
+            })
+
+        # -------------------------------------------------
+        # 2. Search products
+        # -------------------------------------------------
+
+        products = Product.objects.filter(
+            Q(name__icontains=query) |
+            Q(brand__name__icontains=query) |
+            Q(category__name__icontains=query) |
+            Q(tag__name__icontains=query) |
+            Q(keywords__keyword__icontains=query),
+            is_available=True
+        ).distinct().order_by(
+            "-created_at"
+        )[:5]
+
+        for product in products:
+
+            suggestions.append({
+                "type": "product",
+                "text": product.name,
+                "slug": product.slug,
+                "image": product.image.url if product.image else None
+            })
+
+        # -------------------------------------------------
+        # Remove duplicate text
+        # -------------------------------------------------
+
+        unique_suggestions = []
+
+        seen = set()
+
+        for suggestion in suggestions:
+
+            text = suggestion["text"].lower()
+
+            if text not in seen:
+
+                seen.add(text)
+
+                unique_suggestions.append(
+                    suggestion
+                )
+
+        return Response({
+            "query": query,
+            "suggestions": unique_suggestions[:10]
+        })
+
+
+# =========================================================
+# 3. RECENT SEARCHES
+# =========================================================
+class RecentSearchView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        searches = UserSearch.objects.filter(user=request.user).order_by("-created_at")
+        results = []
+        seen = set()
+
+        for search in searches:
+            keyword = search.keyword.strip()
+
+            if not keyword:
+                continue
+
+            keyword_lower = keyword.lower()
+
+            # Remove duplicates
+            if keyword_lower in seen:
+                continue
+
+            seen.add(keyword_lower)
+            results.append({
+                "id": search.id,
+                "keyword": keyword,
+                "created_at": search.created_at
+            })
+
+            # Only return latest 10
+            if len(results) >= 10:
+                break
+
+        return Response({
+            "results": results
+        })
 
 

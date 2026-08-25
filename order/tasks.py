@@ -1,54 +1,45 @@
+# order/tasks.py
+import traceback
+import logging
 from celery import shared_task
-from django.db import transaction
-from .models import Order
+from django.db import transaction, models
+from .models import Order, OrderItem
 
+logger = logging.getLogger(__name__)
 
 @shared_task
-def release_unpaid_order_reservation(order_id):
-    """
-    Background task triggered 15 minutes after checkout initiation.
-    If the order remains 'Pending' and payment was not marked 'successful',
-    restores reserved stock levels and marks the order as 'Cancelled'.
-    """
+def release_unpaid_order_reservation(order_number):
     try:
         with transaction.atomic():
-            # Acquire row-level lock on the order
-            order = Order.objects.select_for_update().get(id=order_id)
+            # 1. Fetch Order directly using order_number (its actual primary key)
+            order = Order.objects.select_for_update().get(order_number=order_number)
 
-            # Check if order is still unpaid
-            payment = getattr(order, 'payment', None)
-            is_unpaid = order.status == 'Pending' and (
-                not payment or payment.status != 'successful'
-            )
+            if order.status == 'Pending':
+                # 2. Fetch order items directly using order foreign key
+                items = OrderItem.objects.filter(order=order)
 
-            if is_unpaid:
-                # 1. Iterate through order items and restore inventory stock
-                order_items = order.order_items.select_related('product', 'variation').all()
+                for item in items:
+                    qty = item.quantity
+                    
+                    # If item has a variation, update variation stock directly
+                    if item.variation_id:
+                        variation = item.variation
+                        type(variation).objects.filter(pk=variation.pk).update(
+                            stock=models.F('stock') + qty
+                        )
+                    # Otherwise update product stock directly
+                    elif item.product_id:
+                        product = item.product
+                        type(product).objects.filter(pk=product.pk).update(
+                            stock=models.F('stock') + qty
+                        )
+
+                # 3. Mark Order as Cancelled
+                Order.objects.filter(order_number=order_number).update(status='Cancelled')
                 
-                for item in order_items:
-                    if item.variation:
-                        # Lock variation row and restore stock
-                        variation = type(item.variation).objects.select_for_update().get(pk=item.variation.pk)
-                        variation.stock += item.quantity
-                        variation.save()
-                    elif item.product:
-                        # Lock main product row and restore stock
-                        product = type(item.product).objects.select_for_update().get(pk=item.product.pk)
-                        product.stock += item.quantity
-                        product.save()
+                logger.info(f"Successfully released stock for Order #{order_number}")
 
-                # 2. Mark order as Cancelled
-                order.status = 'Cancelled'
-                order.save()
-
-                # 3. Update payment status if present
-                if payment:
-                    payment.status = 'expired'
-                    payment.save()
-
-                print(f"[RESERVATION EXPIRED] Order #{order.id} canceled and stock restored.")
-
-    except Order.DoesNotExist:
-        print(f"[RESERVATION TASK] Order #{order_id} not found.")
     except Exception as e:
-        print(f"[RESERVATION TASK ERROR] Failed to release stock for Order #{order_id}: {str(e)}")
+        print("======== TRACEBACK ERROR ========")
+        print(traceback.format_exc())
+        print("======== END TRACEBACK ========")

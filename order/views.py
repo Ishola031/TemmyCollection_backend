@@ -8,6 +8,7 @@ from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.exceptions import ValidationError
 from .serializers import CartSerializer, CartItemSerializer, OrderSerializer, ShippingAddressSerializer, StateSerializer, OrderItemSerializer
+from django.db.models import Q
 import requests
 import uuid
 from django.conf import settings
@@ -229,7 +230,7 @@ def CartCountApi(request):
 def CheckoutViewApi(request):
     user = request.user
     if user.is_authenticated:
-        order = user.orders.filter(status='Pending').order_by('-created_at').first()
+        order = user.orders.filter(Q(status='Pending') | Q(status='Cancelled')).order_by('-created_at').first()
     
     if order:
         serializer = OrderSerializer(order)
@@ -292,7 +293,7 @@ def initiate_payment(request):
         if not cart:
             return Response({"error": "No active cart found"}, status=status.HTTP_400_BAD_REQUEST)
             
-        order = user.orders.filter(status='Pending').first()
+        order = user.orders.filter(Q(status='Pending') | Q(status='Cancelled')).first()
         if not order:
             return Response({"error": "No active order found"}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -376,11 +377,13 @@ def initiate_payment(request):
                 }
             )
 
+        print('hii')
         if running_total <= 0:
             return Response({"error": "Invalid cart total."}, status=status.HTTP_400_BAD_REQUEST)
-
+        print('hi')
         running_total += order.shipping_price
         order.sub_total = running_total
+        order.status = 'Pending'
         order.save()
 
         currency = "NGN"
@@ -401,7 +404,9 @@ def initiate_payment(request):
         order.save()
 
     # Schedule background release task (Runs in 15 minutes if unpaid)
-    # release_unpaid_order_reservation.apply_async(args=[order.id], countdown=900)
+    transaction.on_commit(
+        lambda: release_unpaid_order_reservation.apply_async(args=[order.order_number], countdown=30)
+    )
 
     # 3. Flutterwave Integration
     flutterwave_payload = {
@@ -606,7 +611,6 @@ def CreatecheckoutApi(request):
     try:
         user = request.user
         data = request.data
-        print(data)
         shipping_address = data.get('shipping_address')
 
         # 1. Verify Active Cart
@@ -643,7 +647,7 @@ def CreatecheckoutApi(request):
 
         sub_total = float(running_total) + float(shipping_price)
         # 2. Check for Pending Order
-        order = user.orders.filter(status='Pending').order_by('-created_at').first()
+        order = user.orders.filter(Q(status='Pending') | Q(status='Cancelled')).order_by('-created_at').first()
         
         if order:
             if not shipping_address:
@@ -702,7 +706,6 @@ def CreatecheckoutApi(request):
         print(traceback.format_exc())
         return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def OrderView(request):
@@ -710,7 +713,6 @@ def OrderView(request):
     orders = user.orders.all()
     serializer = OrderSerializer(orders, many=True)
     return Response(serializer.data, status=status.HTTP_200_OK)
-
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])

@@ -1,7 +1,8 @@
 from rest_framework import serializers
 from Account.serializers import UserInfoSerializer
 from .models import (Collection, Product, Category, Color, Size,
-                     Variation, UserProductView,ProductLike, Brand,SpecificationKey,ProductSpecification, ProductReview)
+                     Variation, UserProductView,ProductLike, Brand,SpecificationKey,ProductSpecification, ProductReview,
+                     SearchKeyword,UserSearch, ProductKeyword)
 from django.db.models import Exists, OuterRef
 
 class ColorSerializers(serializers.ModelSerializer):
@@ -127,7 +128,7 @@ class ProductLikeSerializer(serializers.ModelSerializer):
     # Fixed inheritance from ModelField -> ModelSerializer
     class Meta:
         model = ProductLike
-        fields = ("product", "user")
+        fields = ('id',"product", "user")
 
 
 class BrandSerializer(serializers.ModelSerializer):
@@ -157,4 +158,19 @@ class UserProductViewSerializer(serializers.ModelSerializer):
         fields = ('id', 'product', 'user')
 
 
+class SearchKeywordSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = SearchKeyword
+        fields = ('id','keyword', 'search_count')
+
+class UserKeywordSerializer(serializers.ModelSerializer):
+    user= UserInfoSerializer
+    class Meta:
+        model = UserSearch
+        fields = ('id', 'user', 'keyword')
+
+class ProductKeywordSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ProductKeyword
+        fields = ('id','product', 'keyword')
 
