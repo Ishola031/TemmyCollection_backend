@@ -32,3 +32,9 @@ db.sqlite3.backup
 private_key.perm
 public_key.perm
 
+
+
+# Private keys and certificates
+private_key.pem
+*.pem
+*.perm
