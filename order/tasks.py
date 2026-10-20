@@ -36,10 +36,10 @@ def release_unpaid_order_reservation(order_number):
 
                 # 3. Mark Order as Cancelled
                 Order.objects.filter(order_number=order_number).update(status='Cancelled')
-                
                 logger.info(f"Successfully released stock for Order #{order_number}")
 
     except Exception as e:
         print("======== TRACEBACK ERROR ========")
         print(traceback.format_exc())
         print("======== END TRACEBACK ========")
+

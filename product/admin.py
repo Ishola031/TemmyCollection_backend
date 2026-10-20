@@ -1,12 +1,22 @@
 from django.contrib import admin
 from .models import (Category, Tag, Color, Size, Product, ProductTag, Collection, ProductCollection, Variation, ProductLike, 
                      CategoryAttribute,AttributeOption, UserProductView,ProductAttributeValue, ProductGallery, Brand, SpecificationKey,
-                     ProductSpecification, ProductReview, SearchKeyword,UserSearch,ProductKeyword)
+                     ProductSpecification, ProductReview, SearchKeyword,UserSearch,ProductKeyword, ProductImage)
 # Register your models here.
 @admin.register(Brand)
 class BrandAdmin(admin.ModelAdmin):
     prepopulated_fields = {'slug': ('name',)}
 
+class ProductImageInline(admin.TabularInline):
+    model = ProductImage
+    extra = 1
+    fields = ("image", "is_main", "created_at")
+    readonly_fields = ("created_at",)
+
+
+@admin.register(ProductImage)
+class ProductImageAdmin(admin.ModelAdmin):
+    pass
 @admin.register(ProductGallery)
 class ProductGalleryAdmin(admin.ModelAdmin):
     pass
@@ -100,7 +110,7 @@ class CollectionAdmin(admin.ModelAdmin):
 class ProductAdmin(admin.ModelAdmin):
     prepopulated_fields = {'slug': ('name',)}
     search_fields = ["name"]
-    inlines=[ProductVariantInline,ProductAttributeValueInline, ProductSpecificationInline]
+    inlines=[ProductVariantInline,ProductAttributeValueInline, ProductSpecificationInline, ProductImageInline]
 
 @admin.register(SpecificationKey)
 class SpecificationKeyAdmin(admin.ModelAdmin):

@@ -78,6 +78,11 @@ class Size(models.Model):
             self.slug = slugify(self.name)
         super().save(*args, **kwargs)
 
+
+
+
+
+
 class Product(models.Model):
     name = models.CharField(max_length=200, unique=True)
     slug = models.SlugField(max_length=200, unique=True)
@@ -92,6 +97,17 @@ class Product(models.Model):
     tag = models.ManyToManyField(Tag, related_name='tag', through='ProductTag')
     created_at = models.DateTimeField(auto_now_add=True)
     modified_date = models.DateTimeField(auto_now=True)
+
+
+    @property
+    def total_stock(self):
+        if self.variations.exists():
+            return sum(
+                variation.stock
+                for variation in self.variations.all()
+            )
+
+        return self.stock
     
     def get_url(self):
         return reverse("product_detail", args=[self.category.slug, self.slug])
@@ -103,10 +119,54 @@ class Product(models.Model):
             self.slug = slugify(self.name)
         super().save(*args, **kwargs)
     
+
+
+
+
+
+
+
 variation_category_choice = (
     ('color', 'color'),
     ('size', 'size'),
 )
+
+
+
+
+class ProductImage(models.Model):
+    product = models.ForeignKey(
+        Product,
+        on_delete=models.CASCADE,
+        related_name="images"
+    )
+    image = CloudinaryField(
+        "image",
+        folder="products"
+    )
+    is_main = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["created_at"]
+
+
+    def save(self, *args, **kwargs):
+        if self.is_main:
+            ProductImage.objects.filter(
+                product=self.product,
+                is_main=True
+            ).exclude(
+                pk=self.pk
+            ).update(
+                is_main=False
+            )
+
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f"{self.product.name} image"
+
 
 class ProductTag(models.Model):
     Product = models.ForeignKey(Product, on_delete=models.CASCADE)
@@ -174,6 +234,7 @@ class ProductGallery(models.Model):
 
 class CategoryAttribute(models.Model):
     name = models.CharField(max_length=100)
+    slug = models.SlugField()
     category = models.ForeignKey(Category, on_delete=models.CASCADE, related_name='attributes')
     created_at = models.DateTimeField(auto_now_add=True)
     modified_date = models.DateTimeField(auto_now=True)
@@ -192,7 +253,7 @@ class AttributeOption(models.Model):
     
 class ProductAttributeValue(models.Model):
     product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='attribute_values')
-    attribute = models.ForeignKey(CategoryAttribute, on_delete=models.CASCADE)
+    attribute = models.ForeignKey(CategoryAttribute, on_delete=models.CASCADE, related_name='attributes')
     option = models.ForeignKey(AttributeOption, on_delete=models.CASCADE, related_name='productattributevalue')
     created_at = models.DateTimeField(auto_now_add=True)
     modified_date = models.DateTimeField(auto_now=True)
@@ -220,14 +281,7 @@ class ProductReview(models.Model):
     user = models.ForeignKey(Account, on_delete=models.SET_NULL, null=True, related_name='reviews')
     
     # Use string reference 'order.OrderItem' to break the circular import
-    orderItem = models.OneToOneField(
-        'order.OrderItem', 
-        on_delete=models.SET_NULL, 
-        null=True, 
-        blank=True, 
-        related_name='review'
-    )
-    
+    orderItem = models.OneToOneField( 'order.OrderItem',  on_delete=models.SET_NULL,  null=True,  blank=True,  related_name='review')
     rating = models.PositiveSmallIntegerField(validators=[MinValueValidator(1), MaxValueValidator(5)])
     comment = models.TextField()
     is_verified_purchase = models.BooleanField(default=False)

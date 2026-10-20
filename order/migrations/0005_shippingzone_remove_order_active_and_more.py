@@ -47,6 +47,11 @@ class Migration(migrations.Migration):
             model_name='order',
             name='first_name',
         ),
+        migrations.RunSQL(
+            "ALTER TABLE order_orderproduct "
+            "DROP CONSTRAINT order_orderproduct_order_id_18dae3b0_fk_order_order_id",
+            reverse_sql=migrations.RunSQL.noop,
+        ),
         migrations.RemoveField(
             model_name='order',
             name='id',

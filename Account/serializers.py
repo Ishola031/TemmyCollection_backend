@@ -1,18 +1,14 @@
 from  rest_framework import serializers
-from .models import Account, PendingSignup,Notification
+from .models import Account, PendingSignup
 
 
 class AdminUserSerializer(serializers.ModelSerializer):
-    # code = serializers.CharField(write_only=True)
 
     class Meta:
         model = Account
         fields = ( 'first_name','last_name','email', 'password')
         extra_kwargs = {
-            'password': {
-                'write_only': True,
-                'style': {'input_type': 'password'}
-            },
+            'password': {'write_only': True, 'style': {'input_type': 'password'}},
         }
         
 class UserSerializer(serializers.ModelSerializer):
@@ -22,10 +18,7 @@ class UserSerializer(serializers.ModelSerializer):
         model = Account
         fields = ( 'email', 'code', 'username', 'first_name', 'last_name','phone_number','date_joined')
         extra_kwargs = {
-            'password': {
-                'write_only': True,
-                'style': {'input_type': 'password'}
-            },
+            'password': {'write_only': True, 'style': {'input_type': 'password'}},
             'username': {'required': False},
             'code': {'required': False},
             'first_name': {'read_only': True},
@@ -63,7 +56,5 @@ class UserInfoSerializer(serializers.ModelSerializer):
         model = Account
         fields =('id','username', 'first_name', 'last_name')
 
-class NotificationSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Notification
-        fields = ['id', 'title', 'message', 'notification_type', 'is_read', 'target_url', 'created_at']
+
+

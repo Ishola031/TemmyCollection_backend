@@ -2,7 +2,7 @@ from rest_framework import serializers
 from Account.serializers import UserInfoSerializer
 from .models import (Collection, Product, Category, Color, Size,
                      Variation, UserProductView,ProductLike, Brand,SpecificationKey,ProductSpecification, ProductReview,
-                     SearchKeyword,UserSearch, ProductKeyword)
+                     SearchKeyword,UserSearch, ProductKeyword, ProductImage)
 from django.db.models import Exists, OuterRef
 
 class ColorSerializers(serializers.ModelSerializer):
@@ -94,26 +94,84 @@ class ProductSpecificationSerializer(serializers.ModelSerializer):
         fields = ('id', 'product', 'key', 'value')
 
 
-class ProductSerializer(serializers.ModelSerializer):
-    # Declarative relation leverages DRF prefetching automatically
-    variations = VariationSerializer(many=True, read_only=True)
-    category = CategoryMiniSerializer(read_only=True)
-    is_Liked = serializers.BooleanField(read_only=True)
-    specs= ProductSpecificationSerializer(many=True, read_only=True)
+class ProductImageSerializer(serializers.ModelSerializer):
     image = serializers.SerializerMethodField()
 
     class Meta:
-        model = Product
+        model = ProductImage
         fields = (
-            "id", "name", "slug", "description", "is_Liked","variations",'specs',
-            "price", "image", "stock", "discount", 
-            "is_available", "category", "created_at"
+            "id",
+            "image",
+            "is_main",
+            "created_at",
         )
+
     def get_image(self, obj):
         if obj.image:
-            # Returns the Cloudinary CDN URL string
             return obj.image.url
+
         return None
+
+
+class ProductSerializer(serializers.ModelSerializer):
+    variations = VariationSerializer(
+        many=True,
+        read_only=True
+    )
+
+    images = ProductImageSerializer(
+        many=True,
+        read_only=True
+    )
+
+    category = CategoryMiniSerializer(
+        read_only=True
+    )
+
+    is_Liked = serializers.BooleanField(
+        read_only=True
+    )
+
+    specs = ProductSpecificationSerializer(
+        many=True,
+        read_only=True
+    )
+
+    image = serializers.SerializerMethodField()
+
+    total_sold = serializers.IntegerField(
+        read_only=True
+    )
+
+    class Meta:
+        model = Product
+
+        fields = (
+            "id",
+            "name",
+            "slug",
+            "description",
+            "is_Liked",
+            "image",
+            "images",
+            "variations",
+            "specs",
+            "price",
+            "stock",
+            "discount",
+            "is_available",
+            "category",
+            "created_at",
+            "total_sold",
+        )
+
+    def get_image(self, obj):
+        if obj.image:
+            return obj.image.url
+
+        return None
+
+
 
 
 class CollectionSerializer(serializers.ModelSerializer):

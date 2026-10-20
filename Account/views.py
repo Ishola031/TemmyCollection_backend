@@ -1,8 +1,8 @@
 from django.shortcuts import render, redirect
-from .models import Account, EmailVerification, PendingSignup, Notification
+from .models import Account, EmailVerification, PendingSignup
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
-from .serializers import UserSerializer, AdminUserSerializer, NotificationSerializer
+from .serializers import UserSerializer, AdminUserSerializer
 from rest_framework import generics
 from rest_framework.decorators import api_view, permission_classes, authentication_classes
 from django.contrib.auth.hashers import make_password, check_password
@@ -133,6 +133,7 @@ class UserDetailView(generics.RetrieveUpdateAPIView):
     def get_object(self):
         return self.request.user
 
+
 @api_view(['POST'])
 @permission_classes([AllowAny])
 def ResendVerifyEmailCode(request):
@@ -149,6 +150,7 @@ def ResendVerifyEmailCode(request):
         hashed_otp = make_password(otp)
 
         print("OTP:", otp)
+
         # send_verify_email_code.delay(email ,otp)
         user_html_content = render_to_string(
             "email/verifyemail.html",
@@ -183,12 +185,13 @@ def ResendVerifyEmailCode(request):
         print("Send verification error:", str(e))
         return Response({"error": "couldn't send code"})
 
+
 @api_view(['GET'])
 @permission_classes([AllowAny])
 def resend_status(request):
     email = request.GET.get("email")
-
     formData = PendingSignup.objects.filter(email=email).first()
+
     if not formData:
         return Response(
             {"error": "Registration Error"},
@@ -196,10 +199,7 @@ def resend_status(request):
         )
     
     if formData.is_expired():
-        return Response(
-            {"error": "Registration Error"},
-            status=400
-        )
+        return Response({"error": "Registration Error"},status=400)
     
     try:
         obj = EmailVerification.objects.filter(email=email).latest("created_at")
@@ -241,9 +241,9 @@ class CustomTokenObtainPairView(TokenObtainPairView):
                 key='access_token',
                 value=access_token,
                 max_age=15 * 60,
-                httponly=True,     # Keeps token safe from XSS attacks
-                samesite='Lax',    # CSRF protection
-                secure=False,      # Set to True in production (HTTPS)
+                httponly=True,     
+                samesite='Lax',    
+                secure=False,      
                 path='/'
             )
             
@@ -252,7 +252,7 @@ class CustomTokenObtainPairView(TokenObtainPairView):
                 response.set_cookie(
                     key='refresh_token',
                     value=refresh_token,
-                    max_age=7 * 24 * 60 * 60, # 7 days in seconds
+                    max_age=7 * 24 * 60 * 60, 
                     httponly=True,
                     samesite='Lax',
                     secure=False,
@@ -279,7 +279,7 @@ class CustomRefreshTokenView(TokenRefreshView):
                 key='access_token',
                 value=access_token,
                 httponly=True,     # Keeps token safe from XSS attacks
-                max_age=15 * 30,    
+                max_age= 15 * 60,    
                 samesite='Lax',    # CSRF protection
                 secure=False,      # Set to True in production (HTTPS)
                 path='/'
@@ -287,6 +287,7 @@ class CustomRefreshTokenView(TokenRefreshView):
             return res
         except:
             return Response()
+
 
 @api_view(['POST'])    
 @permission_classes([IsAuthenticated]) 
@@ -301,12 +302,14 @@ def LogoutView(request):
     except:
         return Response({'success': False})
 
+
 @api_view(['POST', 'GET'])
-@permission_classes([AllowAny]) # MUST BE AllowAny so unauthenticated users don't get a 401 error
+@permission_classes([AllowAny]) 
 def is_authenticated(request):
     if request.user and request.user.is_authenticated:
         return Response({'isAuthenticated': True, 'user': UserSerializer(request.user).data})
     return Response({'isAuthenticated': False, 'user': None}, status=401)
+
 
 @login_required
 def google_login_callback(request):
@@ -322,36 +325,21 @@ def google_login_callback(request):
         key='access_token',
         value=access_token,
         max_age=30,
-        httponly=True,   # Critical: Protects token from malicious frontend scripts
-        secure=False,    # Set to True in production over HTTPS
+        httponly=True,   
+        secure=False,    
         samesite='Lax'
     )
 
     response.set_cookie(
         key='refresh_token',
         value=refresh_token,
-        max_age=7 * 24 * 60 * 60, # 7 days in seconds
+        max_age=7 * 24 * 60 * 60, 
         httponly=True,
-        secure=False,    # Set to True in production
+        secure=False,    
         samesite='Lax'
     )
 
     return response
-
-
-    # social_accounts = SocialAccount.objects.filter(user=user)
-    # social_account = social_accounts.first()
-    # if not social_account:
-    #     print("No social account for user", user)
-    #     return redirect('http://localhost:3000/login/callback/?error=NoSocialAccount')
-    # token = SocialToken.objects.select_related('account').filter(account=social_account, account__provider='Google').first()
-    # if token:
-    #     refresh = RefreshToken.for_user(user)
-    #     access_token = str(refresh.access_token)
-    #     return redirect(f'http://localhost:3000/login/callback/?access_token={access_token}')
-    # else:
-    #     print('No Google token found for user', user)
-    #     return redirect(f'http://localhost:3000/login/callback/?error=NoGoogleToken')
 
 @api_view(['POST'])
 @authentication_classes([])
@@ -380,9 +368,9 @@ def admin_login(request):
         key='access_token',
         value=access_token,
         max_age= 15 * 60,
-        httponly=True,     # Keeps token safe from XSS attacks
-        samesite='Lax',    # CSRF protection
-        secure=False,      # Set to True in production (HTTPS)
+        httponly=True,     
+        samesite='Lax',    
+        secure=False,      
         path='/'
     )
             
@@ -391,7 +379,7 @@ def admin_login(request):
         res.set_cookie(
             key='refresh_token',
             value=refresh_token,
-            max_age=7 * 24 * 60 * 60, # 7 days in seconds
+            max_age=7 * 24 * 60 * 60, 
             httponly=True,
             samesite='Lax',
             secure=False,
@@ -416,6 +404,7 @@ def admin_signup(request):
         return Response({'success': 'Account Created successfully'}, status=200)
     return Response({'s': serializer.errors,'error': 'Error, Please try again later.'})
 
+
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def IsAdminAuthenticated(request):
@@ -424,6 +413,8 @@ def IsAdminAuthenticated(request):
         return Response({'isAuthorized': True}, status=status.HTTP_200_OK)
     return Response({'isAuthorized': False}, status=status.HTTP_401_UNAUTHORIZED)
 
+
+
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def userDetails(request):
@@ -431,11 +422,5 @@ def userDetails(request):
     serializer = UserSerializer(user)
     return Response(serializer.data)
 
-class NotificationListView(generics.ListAPIView):
-    serializer_class = NotificationSerializer
-    permission_classes = [IsAuthenticated]
 
-    def get_queryset(self):
-        # Fetch notifications belonging exclusively to the logged-in user
-        return Notification.objects.filter(user=self.request.user)
 

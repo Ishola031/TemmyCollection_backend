@@ -7,7 +7,7 @@ urlpatterns = [
     path('adduserreview/', views.AddUserReviewAPi),
     path('productreview/', views.ProductReviewAPi),
     path('collection/', views.CollectionViewApi),
-    path('product/filter/', views.ProductFilterViewApi),
+    path('product/filter/', views.ProductFilterView.as_view()),
     path('productdetail/', views.ProductViewApi),
     path('productlike/', views.ProductLikeApi),
     path('addproductviewed/', views.AddUserProductViewAPi),

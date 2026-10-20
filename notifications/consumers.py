@@ -1,11 +1,12 @@
-# Account/consumers.py
-import json
 from urllib.parse import parse_qs
 from channels.generic.websocket import AsyncWebsocketConsumer
 from rest_framework_simplejwt.tokens import AccessToken
 from django.contrib.auth import get_user_model
-
+import json
 User = get_user_model()
+
+
+
 
 class NotificationConsumer(AsyncWebsocketConsumer):
     async def connect(self):
@@ -65,15 +66,18 @@ class NotificationConsumer(AsyncWebsocketConsumer):
             await self.channel_layer.group_discard(self.group_name, self.channel_name)
 
     async def send_notification(self, event):
-        print("🔥 EVENT FROM CHANNEL LAYER:", event)
+            print("🔥 EVENT FROM CHANNEL LAYER:", event)
+    
+            response = {
+                "action": event.get("action", "create"),
+                "content": event.get("content", {}),
+            }
+    
+            print("📤 SENDING TO REACT:", response)
+    
+            await self.send(
+                text_data=json.dumps(response)
+            )
 
-        response = {
-            "action": event.get("action", "create"),
-            "content": event.get("content", {}),
-        }
 
-        print("📤 SENDING TO REACT:", response)
 
-        await self.send(
-            text_data=json.dumps(response)
-        )

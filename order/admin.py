@@ -1,11 +1,17 @@
 from django.contrib import admin
 from .models import (Cart, CartItem, Payment, Order, OrderItem, ReviewRating,
-                     ShippingZone, ShippingAddress, ShipmentTracking, Shipment, State, 
+                     ShippingZone, ShippingAddress, ShipmentTracking, Shipment, State, PickupStation,Coupon
 )
 # Register your models here.
 
+@admin.register(Coupon)
+class CouponAdmin(admin.ModelAdmin):
+    pass
 @admin.register(Cart)
 class CartAdmin(admin.ModelAdmin):
+    pass
+@admin.register(PickupStation)
+class PickupAdmin(admin.ModelAdmin):
     pass
 
 @admin.register(CartItem)

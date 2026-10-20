@@ -2,54 +2,217 @@
 <html>
 
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
     <link
-        href="https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,300..800;1,300..800&family=Roboto:ital,wght@0,100..900;1,100..900&display=swap"
+        href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;500;600;700&family=Roboto:wght@400;500;700&display=swap"
         rel="stylesheet">
 </head>
 
-<body style="margin:0;padding:0;background:#f5f5f5;font-family: 'Roboto',sans-serif;">
+<body style="margin:0;padding:0;background:#f3f3f3;font-family:'Roboto',Arial,sans-serif;">
+    <table width="100%" cellpadding="0" cellspacing="0" border="0"
+        style="background:#f3f3f3;padding:40px 15px;">
 
-    <table width="100%" cellpadding="0" cellspacing="0">
         <tr>
             <td align="center">
 
-                <table width="100%" cellpadding="0" cellspacing="0"
-                    style="background:#ffffff;border-radius:10px;padding:20px 30px;max-width: 600px;">
+                <!-- MAIN CONTAINER -->
+                <table width="100%" cellpadding="0" cellspacing="0" border="0"
+                    style="max-width:600px;background:#ffffff;border-radius:14px;overflow:hidden;">
 
+                    <!-- HEADER -->
                     <tr>
-                        <td>
+                        <td style="background:#333333;padding:25px 35px;">
 
-                            <h2 style="color:#333; font-weight: 900; font-size: 25px; margin-bottom: 0;">
+                            <h1 style="
+                                margin:0;
+                                color:#ffffff;
+                                font-size:25px;
+                                font-weight:700;
+                                letter-spacing:-0.5px;
+                            ">
                                 Temmy Collection
-                            </h2>
+                            </h1>
 
-                            <div style="line-height: 17px;">
-                                <p style="font-size:15px;color:#333; font-weight: 700; margin-bottom: 2px;">
-                                    Verify your new Temmy Collection account
-                                </p>
-
-                                <p style="font-size:15px;color:#333;margin-top: 2px; margin-bottom: 10px;">To verify
-                                    your email address,
-                                    Please use the
-                                    following
-                                    One Time Password (OTP)</p>
-                            </div>
-
-                            <h2 style="font-weight: 100;font-size: 30px;margin-top: 0;">
-                                {{code}}
-                            </h2>
-
-                            <p style="font-size:15px;color:#555;line-height:1.6;">
-                                Don't share this OTP with anyone.Temmy takes your account security very seriously. Temmy
-                                Customer Service will never ask you to disclose or verify your Temmy Password, OTP. If
-                                you receive a suspicious email with a link to update your account information, do not
-                                click on the link - instead, report the email.
+                            <p style="
+                                margin:6px 0 0;
+                                color:#d8d8d8;
+                                font-size:13px;
+                            ">
+                                Your trusted shopping destination
                             </p>
 
-                            <p style="font-size:15px;color:#555;">
-                                Thank you
+                        </td>
+                    </tr>
+
+
+                    <!-- CONTENT -->
+                    <tr>
+                        <td style="padding:40px 35px 30px;">
+
+                            <p style="
+                                margin:0 0 8px;
+                                color:#333333;
+                                font-size:20px;
+                                font-weight:700;
+                            ">
+                                Verify your email address
+                            </p>
+
+                            <p style="
+                                margin:0 0 25px;
+                                color:#666666;
+                                font-size:14px;
+                                line-height:1.7;
+                            ">
+                                Welcome to Temmy Collection. To complete the
+                                creation of your account, please enter the
+                                One-Time Password (OTP) below.
+                            </p>
+
+
+                            <!-- OTP BOX -->
+                            <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                                <tr>
+                                    <td align="center"
+                                        style="
+                                            background:#f7f7f7;
+                                            border:1px solid #eeeeee;
+                                            border-radius:10px;
+                                            padding:22px 10px;
+                                        ">
+
+                                        <p style="
+                                            margin:0 0 8px;
+                                            color:#888888;
+                                            font-size:12px;
+                                            text-transform:uppercase;
+                                            letter-spacing:1.5px;
+                                            font-weight:600;
+                                        ">
+                                            Verification Code
+                                        </p>
+
+                                        <h2 style="
+                                            margin:0;
+                                            color:#333333;
+                                            font-size:34px;
+                                            font-weight:700;
+                                            letter-spacing:8px;
+                                        ">
+                                            {{code}}
+                                        </h2>
+
+                                    </td>
+                                </tr>
+                            </table>
+
+
+                            <!-- EXPIRY -->
+                            <p style="
+                                margin:22px 0 0;
+                                color:#777777;
+                                font-size:13px;
+                                line-height:1.6;
+                                text-align:center;
+                            ">
+                                Enter this code on the verification page to
+                                continue creating your account.
+                            </p>
+
+
+                            <!-- SECURITY NOTICE -->
+                            <table width="100%" cellpadding="0" cellspacing="0" border="0"
+                                style="margin-top:30px;">
+
+                                <tr>
+                                    <td style="
+                                        background:#fafafa;
+                                        border-left:4px solid #333333;
+                                        padding:14px 16px;
+                                    ">
+
+                                        <p style="
+                                            margin:0;
+                                            color:#555555;
+                                            font-size:13px;
+                                            line-height:1.7;
+                                        ">
+                                            <strong style="color:#333333;">
+                                                Security reminder:
+                                            </strong>
+                                            Never share this OTP with anyone.
+                                            Temmy Collection Customer Service
+                                            will never ask you to disclose your
+                                            password or OTP.
+                                        </p>
+
+                                    </td>
+                                </tr>
+
+                            </table>
+
+
+                            <p style="
+                                margin:30px 0 0;
+                                color:#555555;
+                                font-size:14px;
+                                line-height:1.6;
+                            ">
+                                If you did not request this verification code,
+                                you can safely ignore this email.
+                            </p>
+
+                            <p style="
+                                margin:25px 0 0;
+                                color:#333333;
+                                font-size:14px;
+                                font-weight:600;
+                            ">
+                                Thank you,
+                            </p>
+
+                            <p style="
+                                margin:4px 0 0;
+                                color:#777777;
+                                font-size:13px;
+                            ">
+                                Temmy Collection Team
+                            </p>
+
+                        </td>
+                    </tr>
+
+
+                    <!-- FOOTER -->
+                    <tr>
+                        <td style="
+                            background:#f8f8f8;
+                            border-top:1px solid #eeeeee;
+                            padding:20px 35px;
+                            text-align:center;
+                        ">
+
+                            <p style="
+                                margin:0;
+                                color:#999999;
+                                font-size:11px;
+                                line-height:1.6;
+                            ">
+                                This is an automated email. Please do not reply
+                                to this message.
+                            </p>
+
+                            <p style="
+                                margin:6px 0 0;
+                                color:#aaaaaa;
+                                font-size:11px;
+                            ">
+                                © Temmy Collection
                             </p>
 
                         </td>
@@ -59,6 +222,7 @@
 
             </td>
         </tr>
+
     </table>
 
 </body>

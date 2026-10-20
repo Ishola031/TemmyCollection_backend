@@ -16,4 +16,6 @@ urlpatterns = [
     path('payment_callback/', views.payment_callback),
     path('user/orders/', views.OrderView),
     path('user/orderdetail/', views.OrderDetailView),
+    path("pickup-stations/", views.PickupStationView, name="pickup-stations"
+),
 ]

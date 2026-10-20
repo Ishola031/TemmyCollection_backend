@@ -15,6 +15,7 @@ env/
 # Environment Variables
 # ======================
 .env
+old_data.json
 
 
 
@@ -26,4 +27,8 @@ media/
 # Django Specific
 # ======================
 db.sqlite3
+db.sqlite3.backup
+
+private_key.perm
+public_key.perm
 

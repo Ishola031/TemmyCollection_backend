@@ -24,6 +24,5 @@ class CookieJWTAuthentication(JWTAuthentication):
             user = self.get_user(validated_token)
             return (user, validated_token)
         except (InvalidToken, TokenError, Exception):
-            # If the token in the cookie is expired or invalid, return None
             # This allows views with AllowAny to process AnonymousUser safely
             return None
